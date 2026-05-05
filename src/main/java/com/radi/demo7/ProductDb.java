@@ -11,12 +11,13 @@ import java.util.List;
 
 public class ProductDb {
 
-    public static List<Product> getProductList() throws ClassNotFoundException, SQLException {
+    public static List<Product> getProductList(String user) throws ClassNotFoundException, SQLException {
 
         Jedis jedis = new Jedis("localhost", 6379);
 
+
         // per user (better than global)
-        String key = "rate:" + "global";
+        String key = "rate:" + user;
 
         int count = 0;
 
@@ -31,7 +32,9 @@ public class ProductDb {
         }
 
         // increase counter
-        jedis.incr(key);       // reset after 10 seconds windo
+        jedis.incr(key);
+
+        // reset after 10 seconds windo
         jedis.expire(key, 10);
 
 
@@ -45,28 +48,30 @@ public class ProductDb {
             Type type = new TypeToken<ArrayList<Product>>() {
             }.getType();
 
+            // "["id": 3 , "name": note , "price":40]"
+
             return gson.fromJson(cached, type);
         }
 
 
-        System.out.println("Hitting the db..........");
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+//        System.out.println("Hitting the db..........");
+//
+//        try {
+//            Thread.sleep(5000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
 
 
         String url = "jdbc:mysql://localhost:3306/products?useSSL=false";
-        String user = "root";
+        String dbUser = "root";
         String password = "123#";
 
         ArrayList<Product> products = new ArrayList<>();
 
         Class.forName("com.mysql.cj.jdbc.Driver");
 
-        try (Connection connection = DriverManager.getConnection(url, user, password);
+        try (Connection connection = DriverManager.getConnection(url, dbUser, password);
 
              Statement statement = connection.createStatement();
 
@@ -90,5 +95,25 @@ public class ProductDb {
         return products;
 
 
+    }
+
+    public static boolean validateUser(String username, String password) throws Exception {
+
+        String url = "jdbc:mysql://localhost:3306/products?useSSL=false";
+        String dbUser = "root";
+        String dbPassword = "123#";
+
+        Class.forName("com.mysql.cj.jdbc.Driver");
+
+        try (Connection connection = DriverManager.getConnection(url, dbUser, dbPassword);
+             PreparedStatement ps = connection.prepareStatement(
+                     "SELECT * FROM users WHERE username=? AND password=?")) {
+
+            ps.setString(1, username);
+            ps.setString(2, password);
+
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        }
     }
 }

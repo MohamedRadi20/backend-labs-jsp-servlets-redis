@@ -20,7 +20,8 @@ public class ProductsMain extends HttpServlet {
         // model
         List <Product> data = null;
         try {
-            data = ProductDb.getProductList();
+            String user = (String) request.getAttribute("user");
+            data = ProductDb.getProductList(user);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         } catch (SQLException e) {
